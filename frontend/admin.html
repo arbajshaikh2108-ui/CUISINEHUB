@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Dashboard | CuisineHub</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+body{overflow-x:hidden}.admin-page{padding:32px 0 60px}.admin-head{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:28px}.admin-head h1{margin:0 0 6px;font-size:38px}.admin-head p{margin:0}.admin-actions{display:flex;align-items:center;gap:10px}.live-dot{width:9px;height:9px;background:var(--green);border-radius:50%;display:inline-block;box-shadow:0 0 0 5px rgba(61,220,151,.1)}.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.dash-card{background:linear-gradient(145deg,#121a2d,#10192b);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:var(--shadow)}.dash-label{color:var(--muted);font-size:13px;font-weight:700}.dash-value{font-size:42px;font-weight:900;line-height:1;margin:13px 0 8px}.dash-sub{font-size:12px;color:var(--muted)}.dash-icon{font-size:20px}.panel{margin-top:24px;background:#121a2d;border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 22px;border-bottom:1px solid var(--border)}.panel-head h2{margin:0;font-size:22px}.live-time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}.table-wrap{overflow:auto}.activity-table{width:100%;border-collapse:collapse;min-width:760px}.activity-table th,.activity-table td{padding:15px 18px;text-align:left;border-bottom:1px solid rgba(39,52,82,.65);font-size:13px}.activity-table th{color:#cbd5e8;background:#10192b;font-size:12px;text-transform:uppercase;letter-spacing:.7px}.activity-table td{color:#e8edf7}.status{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border-radius:999px;background:#0d1829;color:var(--muted);font-size:11px;font-weight:800}.status.active{color:#7bf0ba;background:rgba(61,220,151,.1)}.status-dot{width:7px;height:7px;border-radius:50%;background:#758197}.status.active .status-dot{background:var(--green);box-shadow:0 0 0 4px rgba(61,220,151,.08)}.empty-row{text-align:center;padding:40px!important;color:var(--muted)}.last-update{font-size:12px;color:var(--muted);margin-top:10px}.admin-name{font-weight:800}.path-cell{color:#9aa7bc!important;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:1000px){.dashboard-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.admin-head{align-items:flex-start;flex-direction:column}.admin-actions{width:100%;justify-content:space-between}.dashboard-grid{grid-template-columns:1fr}.dash-value{font-size:36px}.admin-head h1{font-size:30px}}
+</style>
+</head>
+<body>
+<main class="container admin-page">
+<header class="admin-head">
+<div><div class="eyebrow">CuisineHub Control Center</div><h1>Admin Dashboard</h1><p class="muted"><span class="live-dot"></span> Live monitoring is enabled</p><div class="last-update" id="lastUpdate">Connecting to server…</div></div>
+<div class="admin-actions"><span class="admin-name" id="adminName">Administrator</span><button class="btn ghost" id="adminLogout">Logout</button></div>
+</header>
+<section class="dashboard-grid">
+<div class="dash-card"><div class="dash-icon">👥</div><div class="dash-label">Total Clients</div><div class="dash-value" id="totalClients">—</div><div class="dash-sub">Registered user accounts</div></div>
+<div class="dash-card"><div class="dash-icon">🟢</div><div class="dash-label">Active Clients</div><div class="dash-value" id="activeClients">—</div><div class="dash-sub" id="activeWindow">Active in the last 2 minutes</div></div>
+<div class="dash-card"><div class="dash-icon">📅</div><div class="dash-label">Today's Visits</div><div class="dash-value" id="todayVisits">—</div><div class="dash-sub">Unique browser visitors today</div></div>
+<div class="dash-card"><div class="dash-icon">🕒</div><div class="dash-label">Live Server Time</div><div class="dash-value" id="serverClock">—</div><div class="dash-sub">Latest server response</div></div>
+</section>
+<section class="panel">
+<div class="panel-head"><div><h2>Today's Recent Visitors</h2><div class="live-time">Newest activity appears automatically</div></div><div class="live-time" id="refreshState">Auto refresh: 3s</div></div>
+<div class="table-wrap"><table class="activity-table"><thead><tr><th>Visitor</th><th>Email</th><th>First Seen</th><th>Last Activity</th><th>Status</th><th>Last Page</th></tr></thead><tbody id="visitorBody"><tr><td class="empty-row" colspan="6">Loading live visitors…</td></tr></tbody></table></div>
+</section>
+</main>
+<script>
+const API='/api';
+async function api(path,opts={}){const r=await fetch(API+path,{headers:{'Content-Type':'application/json',...(opts.headers||{})},...opts});let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Request failed');return d}
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]))}
+function formatTime(value){if(!value)return '—';const d=new Date(value.replace(' ','T'));return Number.isNaN(d.getTime())?value:d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function renderVisitors(rows){const body=document.getElementById('visitorBody');if(!rows.length){body.innerHTML='<tr><td class="empty-row" colspan="6">No visitors recorded today yet.</td></tr>';return}body.innerHTML=rows.map(v=>`<tr><td>${esc(v.name)}</td><td>${esc(v.email)}</td><td>${formatTime(v.first_seen)}</td><td>${formatTime(v.last_seen)}</td><td><span class="status ${v.active?'active':''}"><span class="status-dot"></span>${v.active?'Active':'Inactive'}</span></td><td class="path-cell" title="${esc(v.last_path||'')}">${esc(v.last_path||'—')}</td></tr>`).join('')}
+async function loadDashboard(){try{const d=await api('/admin/dashboard');const s=d.stats;document.getElementById('totalClients').textContent=s.total_clients;document.getElementById('activeClients').textContent=s.active_clients;document.getElementById('todayVisits').textContent=s.today_visits;document.getElementById('activeWindow').textContent=`Active in the last ${s.active_window_minutes} minute${s.active_window_minutes===1?'':'s'}`;document.getElementById('serverClock').textContent=formatTime(s.server_time);document.getElementById('lastUpdate').textContent=`Last updated: ${formatTime(s.server_time)}`;renderVisitors(d.recent_visits)}catch(e){if(e.message.toLowerCase().includes('admin login'))location.href='/admin-login.html';else document.getElementById('lastUpdate').textContent='Dashboard connection error'}}
+(async()=>{try{const d=await api('/admin/me');if(!d.admin){location.href='/admin-login.html';return}document.getElementById('adminName').textContent=d.admin.name||d.admin.email;await loadDashboard();setInterval(loadDashboard,3000);document.getElementById('adminLogout').onclick=async()=>{await api('/admin/logout',{method:'POST'});location.href='/admin-login.html'}}catch(e){location.href='/admin-login.html'}})();
+</script>
+</body>
+</html>
